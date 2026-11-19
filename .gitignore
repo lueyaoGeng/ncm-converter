@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.spec
+/vendor/
+/NCM 转换结果/
+*.ncm
+*.wav
+*.flac
+*.mp3
+*.ogg
+*.m4a
+*.aiff
+*.exe
