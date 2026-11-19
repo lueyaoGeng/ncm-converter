@@ -63,7 +63,7 @@ jobs:
             tail -n 130 "$RUNNER_TEMP/ffmpeg.log"
             exit 1
           }
-          lipo -verify_arch ${{ matrix.arch }} vendor/ffmpeg
+          lipo vendor/ffmpeg -verify_arch ${{ matrix.arch }}
 
       - name: Package standalone app
         shell: bash

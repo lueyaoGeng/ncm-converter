@@ -27,5 +27,5 @@ fi
 
 app=dist/NCMConverter.app
 codesign --verify --deep --strict "$app"
-lipo -verify_arch "$arch" "$app/Contents/MacOS/NCMConverter"
+lipo "$app/Contents/MacOS/NCMConverter" -verify_arch "$arch"
 ditto -c -k --sequesterRsrc --keepParent "$app" "dist/NCMConverter-macos-$arch.zip"
