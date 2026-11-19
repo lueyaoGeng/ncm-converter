@@ -5,6 +5,7 @@ No network access; source files are never modified.
 from __future__ import annotations
 import argparse
 import base64
+import errno
 import io
 import json
 import os
@@ -198,8 +199,27 @@ def safe_name(name):
         name = '_' + name
     return name
 
+def publish_file(staged, target):
+    if os.name == 'nt':
+        staged.rename(target)  # Windows rename refuses an existing target.
+        return
+    try:
+        os.link(staged, target)
+    except OSError as error:
+        if error.errno not in (errno.ENOTSUP, errno.EOPNOTSUPP, errno.EPERM):
+            raise
+        # Filesystems such as exFAT lack hard links. Claim the name before replacing it.
+        with target.open('xb'):
+            pass
+        try:
+            staged.replace(target)
+        except OSError:
+            target.unlink(missing_ok=True)
+            raise
+
+
 def convert(source, outdir, fmt='WAV', bitrate=320, rate=0, depth=24):
-    source, outdir = Path(source), Path(outdir)
+    source, outdir = Path(source).expanduser(), Path(outdir).expanduser()
     if fmt not in FORMATS: raise ValueError('未知输出格式')
     outdir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.ncm-', dir=outdir) as tmp:
@@ -245,10 +265,7 @@ def convert(source, outdir, fmt='WAV', bitrate=320, rate=0, depth=24):
             stem = f'{name} ({count})' if count else name
             target = outdir / f'{stem}.{suffix}'
             try:
-                if os.name == 'nt':
-                    staged.rename(target)  # Windows rename refuses an existing target.
-                else:
-                    os.link(staged, target)
+                publish_file(staged, target)
                 break
             except FileExistsError:
                 count += 1
@@ -414,7 +431,9 @@ def main():
     args=parser.parse_args()
     if not args.inputs:gui();return 0
     inputs=[]
-    for p in args.inputs: inputs.extend(sorted(p.rglob('*.ncm')) if p.is_dir() else [p])
+    for p in args.inputs:
+        p = p.expanduser()
+        inputs.extend(sorted(p.rglob('*.ncm')) if p.is_dir() else [p])
     inputs=list(dict.fromkeys(p.resolve() for p in inputs));errors=0
     if not inputs: print('没有找到 NCM 文件');return 1
     for p in inputs:

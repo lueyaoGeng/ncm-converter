@@ -1,5 +1,6 @@
 """Exercise the downloadable bundle with generated audio and artwork."""
 import base64
+import errno
 import json
 import math
 import os
@@ -9,13 +10,14 @@ import subprocess
 import sys
 import tempfile
 import wave
+from unittest.mock import patch
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from converter import FORMATS, read_tags
+from converter import FORMATS, publish_file, read_tags
 
 
 def create_source(path, payload, file_format, cover):
@@ -68,6 +70,20 @@ def run(app, ffmpeg, temp):
             if gui.poll() is None:
                 gui.terminate()
                 gui.wait(timeout=10)
+
+    staged = temp / 'completed-audio'
+    output = temp / 'reserved-output'
+    staged.write_bytes(b'complete')
+    with patch('converter.os.link', side_effect=OSError(errno.ENOTSUP, 'hard links unavailable')):
+        publish_file(staged, output)
+        assert output.read_bytes() == b'complete'
+        staged.write_bytes(b'different')
+        try:
+            publish_file(staged, output)
+        except FileExistsError:
+            assert output.read_bytes() == b'complete'
+        else:
+            raise AssertionError('Replacement of an existing output should fail')
 
     wav = temp / 'tone.wav'
     with wave.open(str(wav), 'wb') as f:
