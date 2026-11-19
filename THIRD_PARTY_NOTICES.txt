@@ -1,14 +1,15 @@
-NCM Converter 1.0.0
+NCM Converter 1.1.0
 Application license: GNU GPL version 3 or later. See LICENSE.
-Application source: https://github.com/lueyaoGeng/ncm-converter/tree/v1.0.0
-Corresponding sources: https://github.com/lueyaoGeng/ncm-converter/releases/tag/v1.0.0
-License texts are in licenses/ and are bundled in the standalone executable.
+Application source: https://github.com/lueyaoGeng/ncm-converter/tree/v1.1.0
+Corresponding sources: https://github.com/lueyaoGeng/ncm-converter/releases/tag/v1.1.0
+License texts are in licenses/ and are included in the app bundle.
 
 FFmpeg 7.1.5 — GNU GPL version 3 or later for this build.
 The executable invokes FFmpeg as a separate process.
 Source: https://ffmpeg.org/releases/ffmpeg-7.1.5.tar.xz
 Build configuration and exact archive hashes are in build-ffmpeg.sh and
-ffmpeg-source-sha256.txt. No upstream source files were modified.
+ffmpeg-source-sha256.txt. For the macOS build, the script refreshes
+the GNU host detection scripts in LAME and libvorbis from libogg.
 The FFmpeg build statically includes these libraries:
 
 LAME 3.100 — GNU LGPL.
@@ -24,9 +25,12 @@ Pillow 13.0.0 — MIT-CMU.
 Source: https://pypi.org/project/Pillow/13.0.0/#files
 PyCryptodome 4.5.0 — BSD-2-Clause, Unlicense and MIT.
 Source: https://pypi.org/project/pycryptodome/4.5.0/#files
-CPython 3.11.9 — Python Software Foundation License and bundled notices.
-Source: https://www.python.org/downloads/release/python-3119/
-Tcl/Tk 8.6.12 — BSD-style license.
+CPython — Python Software Foundation License and bundled notices.
+macOS 3.13.17: https://www.python.org/downloads/release/python-31317/
+Windows 3.11.9: https://www.python.org/downloads/release/python-3119/
+Tcl/Tk — BSD-style license. macOS 8.6.18 and Windows 8.6.12.
 Source: https://www.tcl.tk/software/tcltk/download.html
+OpenSSL 3.5.9 (macOS Python runtime) — Apache License 2.0.
+Source: https://github.com/openssl/openssl/tree/openssl-3.5.9
 PyInstaller 6.22.3 — GNU GPL version 2 or later with bootloader exception.
 Source: https://pypi.org/project/pyinstaller/6.22.3/#files

@@ -34,11 +34,13 @@ FORMATS = ('WAV', 'FLAC', 'MP3', 'OGG', 'M4A', 'AIFF', '原格式')
 RATE_VALUES = ('与源一致', '8000', '11025', '12000', '16000', '22050', '24000', '32000', '44100', '48000', '88200', '96000')
 APP_DIR = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
 RESOURCE_DIR = Path(getattr(sys, '_MEIPASS', APP_DIR))
-DEFAULT_OUTPUT = APP_DIR / 'NCM 转换结果'
+ON_MAC = sys.platform == 'darwin'
+DEFAULT_OUTPUT = (Path.home() / 'Music' if ON_MAC else APP_DIR) / 'NCM 转换结果'
 
 
 def ffmpeg_path():
-    bundled = RESOURCE_DIR / 'vendor' / 'ffmpeg.exe'
+    filename = 'ffmpeg.exe' if os.name == 'nt' else 'ffmpeg'
+    bundled = RESOURCE_DIR / 'vendor' / filename
     if bundled.is_file():
         return str(bundled)
     installed = shutil.which('ffmpeg')
@@ -261,10 +263,11 @@ def gui():
     root.minsize(880, 600)
     style = ttk.Style(root)
     style.theme_use('clam')
-    style.configure('.', font=('Microsoft YaHei UI', 10))
+    font = 'PingFang SC' if ON_MAC else 'Microsoft YaHei UI'
+    style.configure('.', font=(font, 10))
     style.configure('Treeview', rowheight=29)
     outer = ttk.Frame(root, padding=18); outer.pack(fill='both', expand=True)
-    ttk.Label(outer, text='NCM 音乐转换', font=('Microsoft YaHei UI', 21, 'bold')).pack(anchor='w')
+    ttk.Label(outer, text='NCM 音乐转换', font=(font, 21, 'bold')).pack(anchor='w')
     ttk.Label(outer, text='保留封面、标题、艺术家和专辑 · 本地处理 · 原文件不变').pack(anchor='w', pady=(4,14))
     toolbar = ttk.Frame(outer); toolbar.pack(fill='x', pady=(0,10))
     files = {}; busy = False; stop = threading.Event(); events = queue.Queue()
@@ -307,7 +310,18 @@ def gui():
         d=filedialog.askdirectory()
         if d:output.set(d)
     ttk.Button(line,text='选择目录',command=choose_output).pack(side='left')
-    ttk.Button(line,text='打开目录',command=lambda: os.startfile(output.get()) if Path(output.get()).is_dir() else None).pack(side='left',padx=(8,0))
+    def open_output():
+        path = Path(output.get()).expanduser()
+        if not path.is_dir():
+            return
+        try:
+            if ON_MAC:
+                subprocess.Popen(['/usr/bin/open', str(path.resolve())])
+            else:
+                os.startfile(path)
+        except OSError as error:
+            messagebox.showerror('打开目录', str(error))
+    ttk.Button(line, text='打开目录', command=open_output).pack(side='left', padx=(8, 0))
     note=tk.StringVar()
     def update_note(*_):
         notes = {

@@ -4,9 +4,15 @@
 
 ## 下载和使用
 
-1. 在 [GitHub Releases](https://github.com/lueyaoGeng/ncm-converter/releases/latest) 下载 `NCMConverter.exe`。支持 64 位 Windows。
-2. 双击 EXE，添加一个或多个 NCM 文件，也可以添加整个文件夹。
-3. 选择输出格式和目录，点击 **开始转换**。
+| 系统 | 安装包 |
+| --- | --- |
+| macOS Apple 芯片 | [NCMConverter-macos-arm64.zip](https://github.com/lueyaoGeng/ncm-converter/releases/download/v1.1.0/NCMConverter-macos-arm64.zip) |
+| macOS Intel 芯片 | [NCMConverter-macos-x86_64.zip](https://github.com/lueyaoGeng/ncm-converter/releases/download/v1.1.0/NCMConverter-macos-x86_64.zip) |
+| Windows x64 | [NCMConverter.exe](https://github.com/lueyaoGeng/ncm-converter/releases/download/v1.0.0/NCMConverter.exe) |
+
+Mac 解压 ZIP 后打开 `NCMConverter.app`。Windows 直接打开 EXE。添加 NCM 文件或文件夹，选择输出格式和目录，再点击 **开始转换**。两种安装包都自带运行环境。
+
+Mac 版默认将成品保存到用户的 `音乐/NCM 转换结果` 文件夹。通过「苹果菜单 → 关于本机」查看芯片型号。这两个 Mac 安装包采用临时签名，尚未通过 Apple 公证。首次打开如果看到系统提示，可查看 [Apple 官方说明](https://support.apple.com/zh-cn/102445)。
 
 支持 WAV、FLAC、MP3、OGG Vorbis、M4A AAC、AIFF 和原格式提取。原格式提取沿用源文件中的 MP3 或 FLAC 音频编码。可设置采样率、MP3 和 M4A 码率以及 WAV 和 AIFF 位深。
 
@@ -14,7 +20,7 @@
 
 ## 从源码运行
 
-需要 Python 3.11、Tk 和 FFmpeg。将 FFmpeg 加入 PATH 或放到 `vendor/ffmpeg.exe`，然后运行：
+需要 Python 3.11 或 3.13、Tk 和 FFmpeg。将 FFmpeg 加入 PATH，或将它放到项目里的 `vendor/ffmpeg.exe`（Windows）或 `vendor/ffmpeg`（Mac）。
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -46,6 +52,19 @@ py -3.11 -m venv .venv
 $python = '.\.venv\Scripts\python.exe'
 & $python -m pip install -r build-requirements.txt
 .\build.ps1 -Python $python
+```
+
+## 构建 macOS App
+
+GitHub Actions 的「Build macOS apps」流程分别构建并检查 Apple 芯片和 Intel 版本。手动构建需要 Mac、Xcode 命令行工具、`pkg-config`，以及带 Tk 的 [Python 3.13.17](https://www.python.org/downloads/release/python-31317/)。
+
+将发布页的 `corresponding-sources.zip` 解压到同一个源码归档目录，然后在 Mac 上运行以下命令。ZIP 成品位于 `dist/`。
+
+```bash
+bash build-ffmpeg.sh /path/to/extracted-archives vendor/ffmpeg
+python3.13 -m venv .venv
+.venv/bin/python -m pip install -r build-requirements.txt
+PYTHON=.venv/bin/python bash build-macos.sh
 ```
 
 ## 许可
