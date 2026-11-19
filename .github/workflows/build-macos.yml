@@ -1,0 +1,90 @@
+name: Build macOS apps
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [macos-release]
+    paths:
+      - .github/workflows/build-macos.yml
+      - converter.py
+      - build-ffmpeg.sh
+      - build-macos.sh
+      - ffmpeg-source-sha256.txt
+      - '*requirements.txt'
+      - scripts/smoke_test_macos.py
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Python with Tk
+        shell: bash
+        run: |
+          pkg="$RUNNER_TEMP/python-3.13.17.pkg"
+          curl --fail --location --retry 3 \
+            https://www.python.org/ftp/python/3.13.17/python-3.13.17-macos11.pkg -o "$pkg"
+          printf '%s  %s\n' '3053592af66128269efab37fe7851a4894920b27c442aeec99ce4d34d17c07e3' "$pkg" | shasum -a 256 --check
+          sudo installer -pkg "$pkg" -target /
+          /Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13 -m venv .venv
+          .venv/bin/python -c 'import platform, tkinter; print(platform.machine(), tkinter.Tcl().eval("info patchlevel"))'
+          .venv/bin/python -m pip install --only-binary=:all: -r build-requirements.txt
+
+      - name: Build FFmpeg
+        shell: bash
+        run: |
+          if ! command -v pkg-config >/dev/null; then
+            brew install pkgconf
+          fi
+          archive="$RUNNER_TEMP/corresponding-sources.zip"
+          curl --fail --location --retry 3 \
+            https://github.com/lueyaoGeng/ncm-converter/releases/download/v1.0.0/corresponding-sources.zip -o "$archive"
+          printf '%s  %s\n' '2d0641e5b7d5b58368a2733b21e18fdbce76c1acf1067f6c5c1294ed384ee88c' "$archive" | shasum -a 256 --check
+          unzip -q "$archive" -d "$RUNNER_TEMP/upstream"
+          bash build-ffmpeg.sh "$RUNNER_TEMP/upstream" vendor/ffmpeg > "$RUNNER_TEMP/ffmpeg.log" 2>&1 || {
+            tail -n 130 "$RUNNER_TEMP/ffmpeg.log"
+            exit 1
+          }
+          lipo -verify_arch ${{ matrix.arch }} vendor/ffmpeg
+
+      - name: Package standalone app
+        shell: bash
+        env:
+          PYTHON: .venv/bin/python
+        run: bash build-macos.sh
+
+      - name: Verify the ZIP on this Mac
+        shell: bash
+        run: |
+          sw_vers
+          check="$RUNNER_TEMP/解压检查 NCM"
+          ditto -x -k "dist/NCMConverter-macos-${{ matrix.arch }}.zip" "$check"
+          codesign --verify --deep --strict "$check/NCMConverter.app"
+          .venv/bin/python scripts/smoke_test_macos.py "$check/NCMConverter.app"
+
+      - name: Upload verified app
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ncm-converter-macos-${{ matrix.arch }}
+          path: dist/NCMConverter-macos-${{ matrix.arch }}.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
