@@ -10,6 +10,7 @@ Source: https://ffmpeg.org/releases/ffmpeg-7.1.5.tar.xz
 Build configuration and exact archive hashes are in build-ffmpeg.sh and
 ffmpeg-source-sha256.txt. For the macOS build, the script refreshes
 the GNU host detection scripts in LAME and libvorbis from libogg.
+It also removes a legacy linker flag from libvorbis configure.
 The FFmpeg build statically includes these libraries:
 
 LAME 3.100 — GNU LGPL.

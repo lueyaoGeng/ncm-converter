@@ -56,6 +56,8 @@ if [[ "$platform" == Darwin ]]; then
             find "$library" -name "$script" -exec cp "libogg-1.3.6/$script" '{}' \;
         done
     done
+    # Recent Apple linkers reject this legacy libvorbis configure flag.
+    sed -i '' 's/ -force_cpusubtype_ALL//g' libvorbis-1.3.7/configure
 fi
 
 export PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig"
